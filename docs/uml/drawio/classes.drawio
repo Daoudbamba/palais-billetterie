@@ -1,0 +1,50 @@
+<mxfile host="app.diagrams.net" modified="2026-02-12T00:00:00.000Z" agent="GPT-5.2-Codex" version="22.0.8" type="device">
+  <diagram id="classes" name="Classes">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="2" value="User&lt;br/&gt;id: UUID&lt;br/&gt;name: String&lt;br/&gt;email: String&lt;br/&gt;phone: String&lt;br/&gt;passwordHash: String&lt;br/&gt;role: Role&lt;br/&gt;createdAt: Instant" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="220" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="3" value="Event&lt;br/&gt;id: UUID&lt;br/&gt;title: String&lt;br/&gt;description: String&lt;br/&gt;startDateTime: Instant&lt;br/&gt;endDateTime: Instant&lt;br/&gt;venue: String&lt;br/&gt;capacity: Integer&lt;br/&gt;status: EventStatus&lt;br/&gt;createdAt: Instant" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="40" width="260" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="4" value="TicketType&lt;br/&gt;id: UUID&lt;br/&gt;name: String&lt;br/&gt;price: Decimal&lt;br/&gt;quota: Integer&lt;br/&gt;salesStart: Instant&lt;br/&gt;salesEnd: Instant" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="40" width="240" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="5" value="Order&lt;br/&gt;id: UUID&lt;br/&gt;userId: UUID&lt;br/&gt;eventId: UUID&lt;br/&gt;amount: Decimal&lt;br/&gt;status: OrderStatus&lt;br/&gt;createdAt: Instant" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="280" width="220" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="6" value="Payment&lt;br/&gt;id: UUID&lt;br/&gt;orderId: UUID&lt;br/&gt;provider: PaymentProvider&lt;br/&gt;providerPaymentId: String&lt;br/&gt;status: PaymentStatus&lt;br/&gt;createdAt: Instant" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="280" width="260" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="7" value="Ticket&lt;br/&gt;id: UUID&lt;br/&gt;orderId: UUID&lt;br/&gt;qrCode: String&lt;br/&gt;status: TicketStatus&lt;br/&gt;usedAt: Instant&lt;br/&gt;createdAt: Instant" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="280" width="240" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="8" value="Refund&lt;br/&gt;id: UUID&lt;br/&gt;orderId: UUID&lt;br/&gt;reason: String&lt;br/&gt;status: RefundStatus&lt;br/&gt;createdAt: Instant" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="480" width="220" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="9" value="Notification&lt;br/&gt;id: UUID&lt;br/&gt;userId: UUID&lt;br/&gt;channel: NotificationChannel&lt;br/&gt;content: String&lt;br/&gt;status: NotificationStatus&lt;br/&gt;sentAt: Instant" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="480" width="260" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#0f172a;strokeWidth=2;" edge="1" parent="1" source="2" target="5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#0f172a;strokeWidth=2;" edge="1" parent="1" source="3" target="4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#0f172a;strokeWidth=2;" edge="1" parent="1" source="5" target="7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#0f172a;strokeWidth=2;" edge="1" parent="1" source="5" target="6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#0f172a;strokeWidth=2;" edge="1" parent="1" source="5" target="8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#0f172a;strokeWidth=2;" edge="1" parent="1" source="2" target="9"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#0f172a;strokeWidth=2;" edge="1" parent="1" source="3" target="7"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

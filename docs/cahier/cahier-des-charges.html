@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Cahier des Charges – Plateforme de Billetterie Digitale</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #0f172a;
+      --muted: #334155;
+      --accent: #0ea5e9;
+    }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font: 14px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; }
+    .page { max-width: 860px; margin: 40px auto; padding: 0 24px 64px; }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    h2 { font-size: 20px; margin: 24px 0 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    h3 { font-size: 16px; margin: 18px 0 6px; color: var(--muted); }
+    p { margin: 8px 0; }
+    ul { margin: 6px 0 12px 20px; }
+    li { margin: 3px 0; }
+    .meta { color: var(--muted); margin-bottom: 16px; }
+    .toc ul { columns: 2; column-gap: 24px; }
+    .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: var(--muted); }
+    .badge { display: inline-block; background: #f1f5f9; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2px 8px; font-size: 12px; }
+    .diagram { margin: 12px 0 24px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #ffffff; }
+    .diagram img { max-width: 100%; height: auto; display: block; }
+    .caption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .note { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; }
+    .page-break { page-break-before: always; }
+    .cover { border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 28px; background: #ffffff; }
+    .cover h1 { font-size: 32px; margin-bottom: 6px; }
+    .cover .meta { font-size: 14px; }
+    .cover .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .cover .cell { border: 1px dashed #e2e8f0; border-radius: 6px; padding: 10px; }
+    .cover .label { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="cover">
+      <h1>📘 CAHIER DES CHARGES – VERSION PREMIUM 2.0</h1>
+      <p class="meta">Plateforme de Billetterie Digitale • Client : Palais de la Culture • Version 2.0 • Rédacteur : Daouda • Date : 2026</p>
+      <div class="grid">
+        <div class="cell">
+          <div class="label">Technologies</div>
+          <div>Spring Boot, Next.js, PostgreSQL, Stripe, QR Code</div>
+        </div>
+        <div class="cell">
+          <div class="label">Coordonnées</div>
+          <div>Palais de la Culture • Contact: admin@palaisculture.example</div>
+        </div>
+      </div>
+    </div>
+    <div class="page-break"></div>
+
+    <h2>📑 Table des matières</h2>
+    <div class="toc">
+      <ul>
+        <li>1. Présentation générale</li>
+        <li>2. Objectifs du projet</li>
+        <li>3. Acteurs du système</li>
+        <li>4. Périmètre fonctionnel</li>
+        <li>5. Architecture globale</li>
+        <li>6. Modèle de données</li>
+        <li>7. Diagrammes UML</li>
+        <li>8. API REST – Spécifications</li>
+        <li>9. Exigences techniques</li>
+        <li>10. Sécurité & RGPD</li>
+        <li>11. Performance & Scalabilité</li>
+        <li>12. UX / UI – Exigences</li>
+        <li>13. Tests & Qualité</li>
+        <li>14. Exploitation & Maintenance</li>
+        <li>15. Planning & Roadmap</li>
+        <li>16. Conclusion</li>
+        <li>17. Annexes – Hypothèses</li>
+      </ul>
+    </div>
+
+    <h2>1. Présentation générale</h2>
+    <p>Le Palais de la Culture souhaite moderniser son système de billetterie afin de proposer une plateforme digitale complète, sécurisée et évolutive. Cette solution doit permettre :</p>
+    <ul>
+      <li>la vente en ligne de tickets</li>
+      <li>la gestion centralisée des événements</li>
+      <li>la communication avec les promoteurs</li>
+      <li>la collecte et l’analyse des données spectateurs</li>
+    </ul>
+
+    <h2>2. Objectifs du projet</h2>
+    <h3>2.1 Objectifs fonctionnels</h3>
+    <ul>
+      <li>Digitaliser l’ensemble du processus d’achat</li>
+      <li>Garantir l’unicité et la sécurité des tickets via QR Code</li>
+      <li>Éviter toute survente grâce à un contrôle strict des capacités</li>
+      <li>Offrir un tableau de bord complet aux administrateurs et promoteurs</li>
+      <li>Faciliter la communication via email et SMS</li>
+    </ul>
+    <h3>2.2 Objectifs techniques</h3>
+    <ul>
+      <li>Architecture scalable et modulaire</li>
+      <li>API REST documentée (Swagger / OpenAPI)</li>
+      <li>Sécurité avancée (JWT, RBAC, HTTPS)</li>
+      <li>Base de données robuste et optimisée</li>
+    </ul>
+
+    <h2>3. Acteurs du système</h2>
+    <ul>
+      <li><b>Spectateur</b> : achète et utilise les tickets</li>
+      <li><b>Administrateur</b> : supervise la plateforme, gère les événements</li>
+      <li><b>Promoteur</b> : gère ses propres événements</li>
+      <li><b>Agent de contrôle</b> : vérifie les tickets à l’entrée</li>
+      <li><b>Support</b> : traite les incidents et remboursements</li>
+      <li><b>Super Admin</b> : configuration globale et gestion des droits</li>
+    </ul>
+
+    <h2>4. Périmètre fonctionnel</h2>
+    <h3>4.1 Spectateur</h3>
+    <ul>
+      <li>Consultation des événements</li>
+      <li>Achat de tickets</li>
+      <li>Paiement sécurisé</li>
+      <li>Réception du QR Code</li>
+      <li>Historique des achats</li>
+      <li>Demande de remboursement</li>
+    </ul>
+    <h3>4.2 Administrateur</h3>
+    <ul>
+      <li>Création et gestion des événements</li>
+      <li>Définition des capacités et quotas</li>
+      <li>Suivi des ventes en temps réel</li>
+      <li>Gestion des utilisateurs et promoteurs</li>
+      <li>Campagnes email/SMS</li>
+      <li>Tableau de bord avancé</li>
+    </ul>
+    <h3>4.3 Promoteur</h3>
+    <ul>
+      <li>Consultation des statistiques</li>
+      <li>Suivi des ventes</li>
+      <li>Gestion limitée à ses événements</li>
+    </ul>
+    <h3>4.4 Agent de contrôle</h3>
+    <ul>
+      <li>Scan QR Code</li>
+      <li>Validation en temps réel</li>
+      <li>Mode dégradé offline (liste locale)</li>
+    </ul>
+    <h3>4.5 Support</h3>
+    <ul>
+      <li>Traitement des remboursements</li>
+      <li>Gestion des litiges et réclamations</li>
+    </ul>
+
+    <h2>5. Architecture globale</h2>
+    <h3>5.1 Architecture technique</h3>
+    <p><b>Backend – Spring Boot</b> : Java 17, Spring Security (JWT), Spring Data JPA, PostgreSQL, Stripe (paiement), ZXing (QR Code), Mailjet / Twilio</p>
+    <p><b>Frontend – Next.js</b> : React + TypeScript, App Router, TailwindCSS, JWT client-side, SSR/SSG pour performance</p>
+    <h3>5.2 Architecture logique</h3>
+    <p>Frontend (Next.js) → API REST Backend (Spring Boot) → Base PostgreSQL • Services externes : Stripe, Mailjet, Twilio</p>
+
+    <h2>6. Modèle de données</h2>
+    <h3>6.1 Tables principales</h3>
+    <ul>
+      <li><b>Users</b> : id, name, email, phone, password, role, created_at</li>
+      <li><b>Events</b> : id, title, description, start_datetime, end_datetime, venue, capacity, promoter_id, status, created_at</li>
+      <li><b>Tickets</b> : id, order_id, qr_code, status, used_at, created_at</li>
+      <li><b>Orders</b> : id, user_id, event_id, amount, status, created_at</li>
+      <li><b>Payments</b> : id, order_id, provider, provider_payment_id, status, created_at</li>
+      <li><b>Notifications</b> : id, user_id, channel, content, status, sent_at</li>
+      <li><b>Refunds</b> : id, order_id, reason, status, created_at</li>
+    </ul>
+
+    <h2>7. Diagrammes UML</h2>
+    <p>Cas d’utilisation, composants frontend, classes backend, séquence d’achat.</p>
+
+    <h2>8. API REST – Spécifications</h2>
+    <ul>
+      <li><b>Auth</b> : POST /auth/login, POST /auth/register</li>
+      <li><b>Events</b> : GET /events, GET /events/{id}, POST /events, PUT /events/{id}, DELETE /events/{id}</li>
+      <li><b>Orders & Tickets</b> : POST /orders, GET /orders/{id}, GET /users/{id}/tickets</li>
+      <li><b>Payments</b> : POST /payments, POST /payments/webhook</li>
+      <li><b>Refunds</b> : POST /refunds, GET /refunds/{id}</li>
+      <li><b>Admin / Promoteur</b> : GET /admin/stats, POST /admin/notifications, GET /promoter/events/{id}/stats</li>
+    </ul>
+
+    <h2>9. Exigences techniques</h2>
+    <ul>
+      <li>Architecture modulaire</li>
+      <li>API documentée (Swagger)</li>
+      <li>Gestion centralisée des erreurs</li>
+      <li>Logs & monitoring</li>
+      <li>Sauvegardes automatiques</li>
+      <li>Environnements : dev / staging / prod</li>
+    </ul>
+
+    <h2>10. Sécurité & RGPD</h2>
+    <ul>
+      <li>HTTPS obligatoire</li>
+      <li>JWT + RBAC</li>
+      <li>QR Code unique et signé</li>
+      <li>Anti-survente (transactions atomiques)</li>
+      <li>Consentement utilisateur</li>
+      <li>Droit à l’oubli</li>
+      <li>Journalisation des actions sensibles</li>
+    </ul>
+
+    <h2>11. Performance & Scalabilité</h2>
+    <ul>
+      <li>Temps de réponse API &lt; 2 secondes</li>
+      <li>Support de pics à 5 000 utilisateurs simultanés</li>
+      <li>Cache des événements (TTL configurable)</li>
+      <li>Optimisation des requêtes SQL</li>
+    </ul>
+
+    <h2>12. UX / UI – Exigences</h2>
+    <ul>
+      <li>Mobile first</li>
+      <li>Parcours d’achat simplifié</li>
+      <li>Accessibilité minimale (WCAG 2.1 AA)</li>
+      <li>Interface moderne et intuitive</li>
+      <li>Multilingue : FR / EN</li>
+    </ul>
+
+    <h2>13. Tests & Qualité</h2>
+    <ul>
+      <li>Tests unitaires ≥ 70 %</li>
+      <li>Tests d’intégration API</li>
+      <li>Tests e2e (flux achat complet)</li>
+      <li>Tests de charge (pics de vente)</li>
+    </ul>
+
+    <h2>14. Exploitation & Maintenance</h2>
+    <ul>
+      <li>Monitoring : latence, taux d’erreur, conversions</li>
+      <li>Alertes temps réel</li>
+      <li>Logs consultables 30 jours</li>
+      <li>Procédure de rollback</li>
+    </ul>
+
+    <h2>15. Planning & Roadmap</h2>
+    <p><b>Phase 1 – Fondations</b> : Authentification, Gestion utilisateurs, CRUD événements</p>
+    <p><b>Phase 2 – Vente</b> : Paiement Stripe, Génération QR Code, Tickets</p>
+    <p><b>Phase 3 – Dashboards</b> : Admin, Promoteur</p>
+    <p><b>Phase 4 – Communication</b> : Email, SMS</p>
+
+    <h2>16. Conclusion</h2>
+    <p>Ce cahier des charges version 2.0 constitue une base complète et opérationnelle pour lancer la plateforme de billetterie digitale du Palais de la Culture.</p>
+
+    <h2>17. Annexes – Hypothèses</h2>
+    <ul>
+      <li>Pics de charge estimés : 5 000 utilisateurs simultanés</li>
+      <li>Remboursement : possible jusqu’à 48h avant l’événement, traitement manuel</li>
+      <li>Langues supportées : FR et EN</li>
+    </ul>
+
+    <h2>Annexe – Paramètres par défaut (SLA / RGPD)</h2>
+    <div class="note">
+      <ul>
+        <li><b>SLA API</b> : p95 &lt; 2s, p99 &lt; 4s • Erreurs &lt; 1%</li>
+        <li><b>Capacité</b> : pics de 5 000 utilisateurs simultanés</li>
+        <li><b>Résilience</b> : RPO 4h • RTO 2h • Sauvegardes quotidiennes</li>
+        <li><b>Stripe</b> : webhooks avec idempotence • 3 tentatives (exponentiel)</li>
+        <li><b>RGPD</b> : rétention 24 mois (achats) • 12 mois (logs) • export/suppression sur demande</li>
+        <li><b>Accessibilité</b> : conformité cible WCAG 2.1 AA</li>
+      </ul>
+    </div>
+
+    <h2 class="page-break">Annexe – Diagrammes</h2>
+    <div class="diagram">
+      <h3>Cas d’utilisation</h3>
+      <img src="../uml/images/usecase.png" alt="Diagramme de cas d’utilisation" />
+      <div class="caption">Acteurs et cas d’utilisation principaux.</div>
+    </div>
+    <div class="diagram">
+      <h3>Composants Frontend</h3>
+      <img src="../uml/images/frontend-components.png" alt="Diagramme des composants Frontend" />
+      <div class="caption">Hiérarchie des vues et formulaires.</div>
+    </div>
+    <div class="diagram">
+      <h3>Diagramme de classes Backend</h3>
+      <img src="../uml/images/classes.png" alt="Diagramme de classes Backend" />
+      <div class="caption">Entités, attributs clés et relations.</div>
+    </div>
+    <div class="diagram">
+      <h3>Diagramme d’activité – Achat & Remboursement</h3>
+      <img src="../uml/images/activity.png" alt="Diagramme d’activité achat/remboursement" />
+      <div class="caption">Flux d’achat avec paiement Stripe et process de remboursement.</div>
+    </div>
+
+    <div class="footer">Document Officiel • Version 2.0 • <span class="badge">Premium</span></div>
+  </div>
+</body>
+</html>
