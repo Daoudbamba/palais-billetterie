@@ -28,7 +28,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/*").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/stripe/webhook").permitAll()
-                .anyRequest().authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/orders/**").hasRole("USER")
+                    .requestMatchers(HttpMethod.GET, "/api/orders/**").authenticated()
+                    .requestMatchers("/api/payments/**").authenticated()
+                    .anyRequest().authenticated()
             )
             .httpBasic(Customizer.withDefaults());
 
