@@ -10,6 +10,8 @@ import com.palais.billetterie.notification.service.EmailService;
 import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
 import com.stripe.net.Webhook;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -29,17 +31,20 @@ public class StripeWebhookController {
     private final EmailService emailService;
 
     private final String webhookSecret;
+    private final boolean skipVerify;
 
     public StripeWebhookController(PaymentService paymentService,
                                    TicketService ticketService,
                                    OrderRepository orderRepository,
                                    EmailService emailService,
-                                   @Value("${app.stripe.webhook-secret}") String webhookSecret) {
+                                   @Value("${app.stripe.webhook-secret}") String webhookSecret,
+                                   @Value("${app.stripe.webhook-skip-verify:false}") boolean skipVerify) {
         this.paymentService = paymentService;
         this.ticketService = ticketService;
         this.orderRepository = orderRepository;
         this.emailService = emailService;
         this.webhookSecret = webhookSecret;
+        this.skipVerify = skipVerify;
     }
 
     @PostMapping("/webhook")
@@ -47,7 +52,52 @@ public class StripeWebhookController {
     public ResponseEntity<String> handle(@RequestBody String payload,
                                          @RequestHeader("Stripe-Signature") String sigHeader) {
         try {
-            Event event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
+            Event event;
+            if (skipVerify) {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode root = mapper.readTree(payload);
+                String type = root.path("type").asText();
+                JsonNode obj = root.path("data").path("object");
+                String intentId = obj.path("id").asText();
+                String paymentIdStr = obj.path("metadata").path("paymentId").asText();
+                String orderIdStr = obj.path("metadata").path("orderId").asText();
+
+                if ("payment_intent.succeeded".equals(type)) {
+                    UUID paymentId = UUID.fromString(paymentIdStr);
+                    UUID orderId = UUID.fromString(orderIdStr);
+                    Objects.requireNonNull(orderId, "orderId is required");
+                    paymentService.updateStatus(paymentId, PaymentStatus.SUCCESS, intentId);
+                    orderRepository.findById(orderId).ifPresent(order -> {
+                        order.setStatus(OrderStatus.PAID);
+                        orderRepository.save(order);
+                        ticketService.create(order.getUser().getId(), order.getEvent().getId(), order.getId());
+                        try {
+                            emailService.send(order.getUser().getEmail(),
+                                    "Paiement réussi",
+                                    "Bonjour " + order.getUser().getName() + ",\n\n" +
+                                            "Votre commande est confirmée pour l'événement \"" + order.getEvent().getTitle() + "\".\n" +
+                                            "Merci pour votre achat !");
+                        } catch (Exception ex) { }
+                    });
+                } else if ("payment_intent.payment_failed".equals(type)) {
+                    UUID paymentId = UUID.fromString(paymentIdStr);
+                    paymentService.updateStatus(paymentId, PaymentStatus.FAILED, intentId);
+                    try {
+                        UUID orderId = UUID.fromString(orderIdStr);
+                        Objects.requireNonNull(orderId, "orderId is required");
+                        orderRepository.findById(orderId).ifPresent(order -> {
+                            emailService.send(order.getUser().getEmail(),
+                                    "Échec de paiement",
+                                    "Bonjour " + order.getUser().getName() + ",\n\n" +
+                                            "Votre paiement a échoué pour l'événement \"" + order.getEvent().getTitle() + "\".\n" +
+                                            "Merci de réessayer ou de vérifier vos informations.");
+                        });
+                    } catch (Exception ex) { }
+                }
+                return ResponseEntity.ok("OK");
+            } else {
+                event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
+            }
 
             if ("payment_intent.succeeded".equals(event.getType())) {
                 PaymentIntent intent = (PaymentIntent) event.getDataObjectDeserializer()

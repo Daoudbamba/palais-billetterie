@@ -29,14 +29,20 @@ public class StripeService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
 
-    public StripeService(
+        private final boolean fakeMode;
+
+        public StripeService(
             PaymentRepository paymentRepository,
             OrderRepository orderRepository,
-            @Value("${app.stripe.secret}") String stripeSecret
+                        @Value("${app.stripe.secret}") String stripeSecret,
+                        @Value("${app.stripe.fake:false}") boolean fakeMode
     ) {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
-        Stripe.apiKey = stripeSecret;
+                this.fakeMode = fakeMode || stripeSecret == null || stripeSecret.isBlank() || "sk_test_xxx".equals(stripeSecret);
+                if (!this.fakeMode) {
+                        Stripe.apiKey = stripeSecret;
+                }
     }
 
         @Transactional
@@ -56,26 +62,35 @@ public class StripeService {
         Objects.requireNonNull(payment, "payment must not be null");
         paymentRepository.save(payment);
 
-        PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
-                .setAmount((long) (order.getAmount() * 100)) // en centimes
-                .setCurrency("eur")
-                .putMetadata("paymentId", payment.getId().toString())
-                .putMetadata("orderId", orderId.toString())
-                .build();
+        String providerPaymentId;
+        String clientSecret;
+        if (fakeMode) {
+            providerPaymentId = "pi_fake_" + UUID.randomUUID();
+            clientSecret = providerPaymentId + "_secret_" + UUID.randomUUID();
+        } else {
+            PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                    .setAmount((long) (order.getAmount() * 100)) // en centimes
+                    .setCurrency("eur")
+                    .putMetadata("paymentId", payment.getId().toString())
+                    .putMetadata("orderId", orderId.toString())
+                    .build();
 
-                PaymentIntent intent;
-                try {
-                        intent = PaymentIntent.create(params);
-                } catch (Exception e) {
-                        throw new BadRequestException("Échec de création PaymentIntent: " + e.getMessage());
-                }
+            PaymentIntent intent;
+            try {
+                intent = PaymentIntent.create(params);
+            } catch (Exception e) {
+                throw new BadRequestException("Échec de création PaymentIntent: " + e.getMessage());
+            }
+            providerPaymentId = intent.getId();
+            clientSecret = intent.getClientSecret();
+        }
 
-        payment.setProviderPaymentId(intent.getId());
+        payment.setProviderPaymentId(providerPaymentId);
         Objects.requireNonNull(payment, "payment must not be null");
         paymentRepository.save(payment);
 
         Map<String, Object> response = new HashMap<>();
-        response.put("clientSecret", intent.getClientSecret());
+        response.put("clientSecret", clientSecret);
         response.put("paymentId", payment.getId());
 
                 return response;
