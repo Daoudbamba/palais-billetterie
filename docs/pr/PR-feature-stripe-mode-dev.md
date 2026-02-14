@@ -10,6 +10,12 @@ Permettre des tests locaux complets sans dépendances externes, via:
 - `StripeService`: génération d’Intent factice si fake activé.
 - `StripeWebhookController`: parsing JSON en dev sans `Webhook.constructEvent`.
 
+### Sécurité
+- Ajout d’un `PasswordEncoder` (BCrypt) dans `SecurityConfig` pour encoder/vérifier les mots de passe.
+
+### Migrations
+- Suppression d’un doublon Flyway `V1__seed_demo.sql` qui provoquait « Found more than one migration with version 1 ».
+
 ## Tests / Vérifications
 - Créer commande (Bearer) → `orderId`.
 - `POST /api/payments/stripe/create-intent?orderId=...` → `paymentId` + `clientSecret`.
@@ -17,3 +23,6 @@ Permettre des tests locaux complets sans dépendances externes, via:
 
 ## Risques et rollback
 - Aucun en prod (flags désactivés). En dev, rollback simple en mettant les flags à `false`.
+
+## Base et ordre
+- Base de PR recommandée: `develop`.
