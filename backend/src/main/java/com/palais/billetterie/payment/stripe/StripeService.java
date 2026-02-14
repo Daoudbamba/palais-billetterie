@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Objects;
 
 @Service
 public class StripeService {
@@ -38,8 +39,9 @@ public class StripeService {
         Stripe.apiKey = stripeSecret;
     }
 
-    @Transactional
-        public Map<String, Object> createPaymentIntent(UUID orderId) throws Exception {
+        @Transactional
+                public Map<String, Object> createPaymentIntent(UUID orderId) throws Exception {
+                Objects.requireNonNull(orderId, "orderId is required");
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
@@ -51,6 +53,7 @@ public class StripeService {
                 .createdAt(Instant.now())
                 .build();
 
+        Objects.requireNonNull(payment, "payment must not be null");
         paymentRepository.save(payment);
 
         PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
@@ -68,6 +71,7 @@ public class StripeService {
                 }
 
         payment.setProviderPaymentId(intent.getId());
+        Objects.requireNonNull(payment, "payment must not be null");
         paymentRepository.save(payment);
 
         Map<String, Object> response = new HashMap<>();
@@ -85,6 +89,7 @@ public class StripeService {
          */
         @Transactional
         public String createRefund(UUID paymentId, Long amountCents) throws Exception {
+                Objects.requireNonNull(paymentId, "paymentId is required");
                 Payment payment = paymentRepository.findById(paymentId)
                                 .orElseThrow(() -> new RuntimeException("Payment not found"));
 

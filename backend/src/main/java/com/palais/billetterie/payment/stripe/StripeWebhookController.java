@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/payments/stripe")
@@ -54,6 +55,7 @@ public class StripeWebhookController {
 
                 UUID paymentId = UUID.fromString(intent.getMetadata().get("paymentId"));
                 UUID orderId = UUID.fromString(intent.getMetadata().get("orderId"));
+                Objects.requireNonNull(orderId, "orderId is required");
 
                 paymentService.updateStatus(paymentId, PaymentStatus.SUCCESS, intent.getId());
 
@@ -83,6 +85,7 @@ public class StripeWebhookController {
                 // Email alerte échec de paiement
                 try {
                     UUID orderId = UUID.fromString(intent.getMetadata().get("orderId"));
+                    Objects.requireNonNull(orderId, "orderId is required");
                     orderRepository.findById(orderId).ifPresent(order -> {
                         emailService.send(order.getUser().getEmail(),
                                 "Échec de paiement",

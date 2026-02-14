@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -78,6 +79,7 @@ public class RefundService {
                 .createdAt(Instant.now())
                 .build();
 
+        Objects.requireNonNull(refund, "refund must not be null");
         refund = refundRepository.save(refund);
 
         // Call Stripe to create the refund and mark success
@@ -94,6 +96,7 @@ public class RefundService {
         Refund refund = getById(refundId);
         refund.setStatus(RefundStatus.SUCCESS);
         refund.setProviderRefundId(providerRefundId);
+        Objects.requireNonNull(refund, "refund must not be null");
         refundRepository.save(refund);
 
         Payment payment = refund.getPayment();
@@ -128,6 +131,7 @@ public class RefundService {
     public Refund markRefundFailed(UUID refundId) {
         Refund refund = getById(refundId);
         refund.setStatus(RefundStatus.FAILED);
+        Objects.requireNonNull(refund, "refund must not be null");
         return refundRepository.save(refund);
     }
 }

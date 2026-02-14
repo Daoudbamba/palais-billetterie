@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -76,6 +77,7 @@ public class TicketService {
                 .createdAt(Instant.now())
                 .build();
 
+                Objects.requireNonNull(ticket, "ticket must not be null");
                 ticket = repository.save(ticket);
 
                 // Envoi email de ticket
@@ -101,6 +103,7 @@ public class TicketService {
                 Ticket existing = repository.findById(id)
                                 .orElseThrow(() -> new BadRequestException("Ticket introuvable"));
                 existing.setStatus(status);
+                Objects.requireNonNull(existing, "ticket must not be null");
                 return repository.save(existing);
         }
 
@@ -109,6 +112,7 @@ public class TicketService {
                 if (id == null) throw new BadRequestException("Identifiant de ticket manquant");
                 Ticket existing = repository.findById(id)
                                 .orElseThrow(() -> new BadRequestException("Ticket introuvable"));
+                Objects.requireNonNull(existing, "ticket must not be null");
                 repository.delete(existing);
         }
 }

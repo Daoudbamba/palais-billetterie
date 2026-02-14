@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -53,6 +54,7 @@ public class PaymentService {
             .createdAt(Instant.now())
             .build();
 
+        Objects.requireNonNull(payment, "payment must not be null");
         return repository.save(payment);
     }
 
@@ -64,6 +66,7 @@ public class PaymentService {
             .orElseThrow(() -> new BadRequestException("Paiement introuvable"));
         payment.setStatus(status);
         payment.setProviderPaymentId(providerPaymentId);
+        Objects.requireNonNull(payment, "payment must not be null");
         return repository.save(payment);
     }
 
@@ -72,6 +75,7 @@ public class PaymentService {
         if (id == null) throw new BadRequestException("Identifiant de paiement manquant");
         Payment payment = repository.findById(id)
             .orElseThrow(() -> new BadRequestException("Paiement introuvable"));
+        Objects.requireNonNull(payment, "payment must not be null");
         repository.delete(payment);
         }
 }
