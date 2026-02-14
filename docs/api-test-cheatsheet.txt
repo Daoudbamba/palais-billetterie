@@ -1,0 +1,177 @@
+Admin Dashboard (ADMIN only)
+1) Summary last 30 days (default window)
+    curl -sS -H "Authorization: Bearer <TOKEN_ADMIN>" \
+       http://localhost:8080/api/admin/dashboard/summary | jq
+
+2) Summary with date range
+    curl -sS -G -H "Authorization: Bearer <TOKEN_ADMIN>" \
+       --data-urlencode "from=2024-12-01T00:00:00Z" \
+       --data-urlencode "to=2025-01-01T00:00:00Z" \
+       http://localhost:8080/api/admin/dashboard/summary | jq
+
+3) Summary filtered by event
+    curl -sS -G -H "Authorization: Bearer <TOKEN_ADMIN>" \
+       --data-urlencode "eventId=<EVENT_UUID>" \
+       http://localhost:8080/api/admin/dashboard/summary | jq
+
+4) Time series (daily revenue + tickets used)
+    curl -sS -H "Authorization: Bearer <TOKEN_ADMIN>" \
+       http://localhost:8080/api/admin/dashboard/timeseries | jq
+
+4b) Time series weekly aggregation
+    curl -sS -G -H "Authorization: Bearer <TOKEN_ADMIN>" \
+       --data-urlencode "granularity=week" \
+       http://localhost:8080/api/admin/dashboard/timeseries | jq
+
+4c) Time series monthly aggregation
+    curl -sS -G -H "Authorization: Bearer <TOKEN_ADMIN>" \
+       --data-urlencode "granularity=month" \
+       http://localhost:8080/api/admin/dashboard/timeseries | jq
+
+5) Top events by revenue (limit=5)
+    curl -sS -G -H "Authorization: Bearer <TOKEN_ADMIN>" \
+       --data-urlencode "limit=5" \
+       http://localhost:8080/api/admin/dashboard/top-events | jq
+
+6) Top events sorted by tickets used
+    curl -sS -G -H "Authorization: Bearer <TOKEN_ADMIN>" \
+       --data-urlencode "limit=5" \
+       --data-urlencode "sortBy=tickets" \
+       http://localhost:8080/api/admin/dashboard/top-events | jq
+
+7) Top events filtered by eventIds (comma-separated UUIDs)
+   8) KPIs (conversion, usage, refunds)
+       curl -sS -H "Authorization: Bearer <TOKEN_ADMIN>" \
+          http://localhost:8080/api/admin/dashboard/kpis | jq
+
+   8b) KPIs for a specific event and date window
+       curl -sS -G -H "Authorization: Bearer <TOKEN_ADMIN>" \
+          --data-urlencode "eventId=<EVENT_UUID>" \
+          --data-urlencode "from=2025-12-01T00:00:00Z" \
+          --data-urlencode "to=2026-01-01T00:00:00Z" \
+          http://localhost:8080/api/admin/dashboard/kpis | jq
+    curl -sS -G -H "Authorization: Bearer <TOKEN_ADMIN>" \
+       --data-urlencode "eventIds=11111111-1111-1111-1111-111111111111,22222222-2222-2222-2222-222222222222" \
+       http://localhost:8080/api/admin/dashboard/top-events | jq
+
+Palais Billetterie — Guide de test API (cheatsheet)
+Date: 2026-02-13
+
+Prérequis
+1) Démarrer la base Postgres (port hôte 5434):
+   docker compose -f infra/docker-compose.yml up -d
+2) Lancer le backend Spring Boot:
+   mvn -q -f backend/pom.xml spring-boot:run
+3) Vérifier la santé:
+   curl -sS http://localhost:8080/api/health
+
+Résumé des deux parties
+- Partie Utilisateurs (Users): endpoints liste/lecture/création/mise à jour/suppression avec validations (nom, email). DTO d’entrée et DTO de réponse.
+- Partie Événements (Events): endpoints liste/lecture/création/mise à jour/suppression avec validations (titre, capacité > 0, date de début avant date de fin). DTO d’entrée et DTO de réponse.
+ - Partie Tickets: endpoints liste/lecture/création/mise à jour/suppression. Création via JSON (userId, eventId, orderId). Mise à jour du statut.
+ - Partie Paiements (Payments): endpoints liste/lecture/création/mise à jour/suppression. Création via JSON (orderId, amount, provider?). Mise à jour du statut.
+
+Contexte et correctifs principaux
+- Auth DB: le volume Postgres gardait d’anciens identifiants → recréé + port dédié 5434.
+- Config Spring: URL JDBC ajustée et journalisée au démarrage.
+- Seed SQL: idempotent (ON CONFLICT DO NOTHING) + IDs explicites.
+- Erreurs 404: éviter les espaces dans l’URL et utiliser le bon verbe HTTP (POST pour créer).
+
+Endpoints et tests — Utilisateurs
+1) Lister
+   curl -sS http://localhost:8080/api/users
+2) Détail par id
+   curl -sS http://localhost:8080/api/users/{uuid}
+3) Créer (valide)
+   curl -sS -X POST http://localhost:8080/api/users \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Charlie","email":"charlie@example.com","phone":"+33111222333","role":"USER"}'
+4) Créer (invalide: nom vide, email incorrect) → 400
+   curl -sS -X POST http://localhost:8080/api/users \
+     -H "Content-Type: application/json" \
+     -d '{"name":"","email":"not-an-email","phone":"+33","role":"USER"}'
+5) Mettre à jour (PUT)
+   curl -sS -X PUT http://localhost:8080/api/users/{uuid} \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Charlie Mis à Jour","email":"charlie@example.com","phone":"+33111222333","role":"USER"}'
+6) Supprimer (DELETE)
+   curl -sS -X DELETE http://localhost:8080/api/users/{uuid}
+
+Validations Users
+- name: obligatoire
+- email: obligatoire + format valide
+- Conflits d’unicité email: 409 (message lisible)
+
+Endpoints et tests — Événements
+1) Lister
+   curl -sS http://localhost:8080/api/events
+2) Détail par id
+   curl -sS http://localhost:8080/api/events/{uuid}
+3) Créer (valide)
+   curl -sS -X POST http://localhost:8080/api/events \
+     -H "Content-Type: application/json" \
+     -d '{"title":"Expo Photo","description":"Collection 2026","startDateTime":"2026-04-10T10:00:00Z","endDateTime":"2026-04-10T18:00:00Z","venue":"Galerie","capacity":200}'
+4) Créer (invalide: capacité 0, fin avant début) → 400
+   curl -sS -X POST http://localhost:8080/api/events \
+     -H "Content-Type: application/json" \
+     -d '{"title":"Test","description":"","startDateTime":"2026-04-10T18:00:00Z","endDateTime":"2026-04-10T10:00:00Z","venue":"","capacity":0}'
+5) Mettre à jour (PUT)
+   curl -sS -X PUT http://localhost:8080/api/events/{uuid} \
+     -H "Content-Type: application/json" \
+     -d '{"title":"Expo Photo — MAJ","description":"Nouveaux clichés","startDateTime":"2026-04-10T12:00:00Z","endDateTime":"2026-04-10T19:00:00Z","venue":"Grande Galerie","capacity":250}'
+6) Supprimer (DELETE)
+   curl -sS -X DELETE http://localhost:8080/api/events/{uuid}
+
+Validations Events
+- title: obligatoire
+- capacity: > 0
+- startDateTime/endDateTime: obligatoires, start < end
+
+Endpoints et tests — Tickets
+1) Lister
+   curl -sS http://localhost:8080/api/tickets
+2) Détail par id
+   curl -sS http://localhost:8080/api/tickets/{uuid}
+3) Créer (valide)
+   curl -sS -X POST http://localhost:8080/api/tickets \
+     -H "Content-Type: application/json" \
+     -d '{"userId":"{userUuid}","eventId":"{eventUuid}","orderId":"{orderUuid}"}'
+4) Mettre à jour le statut (PUT)
+   curl -sS -X PUT http://localhost:8080/api/tickets/{uuid} \
+     -H "Content-Type: application/json" \
+     -d '{"status":"USED"}'
+5) Supprimer (DELETE)
+   curl -sS -X DELETE http://localhost:8080/api/tickets/{uuid}
+
+Validations Tickets
+- userId/eventId/orderId: obligatoires
+- status: obligatoire pour mise à jour; valeurs possibles: VALID, USED, CANCELLED
+
+Endpoints et tests — Paiements
+1) Lister
+   curl -sS http://localhost:8080/api/payments
+2) Détail par id
+   curl -sS http://localhost:8080/api/payments/{uuid}
+3) Créer (valide)
+   curl -sS -X POST http://localhost:8080/api/payments \
+     -H "Content-Type: application/json" \
+     -d '{"orderId":"{orderUuid}","amount":49.99,"provider":"STRIPE"}'
+4) Mettre à jour (statut)
+   curl -sS -X PUT http://localhost:8080/api/payments/{uuid} \
+     -H "Content-Type: application/json" \
+     -d '{"status":"SUCCESS","providerPaymentId":"pi_12345"}'
+5) Supprimer (DELETE)
+   curl -sS -X DELETE http://localhost:8080/api/payments/{uuid}
+
+Validations Paiements
+- orderId: obligatoire
+- amount: > 0
+- status: obligatoire pour mise à jour; valeurs possibles: PENDING, SUCCESS, FAILED
+
+Notes
+- Santé: GET /api/health → ok
+- Seeds: 2 users + 2 events injectés au démarrage (idempotent)
+ - Tickets: utilisez les IDs existants (user/event/order) pour créer un ticket; le code est généré automatiquement.
+ - Paiements: utilisez un `orderId` existant; le provider par défaut est "STRIPE".
+- S’assurer qu’aucune instance n’occupe déjà le port 8080 avant de relancer (pkill -f "spring-boot:run").
+ - Les réponses des endpoints utilisent des DTOs de sortie pour éviter d'exposer des champs internes (ex.: hash de mot de passe).
