@@ -66,3 +66,72 @@ export async function createStripeIntent(token: string, orderId: string) {
   if (!res.ok) throw new Error(`CreateIntent échouée (${res.status})`);
   return res.json() as Promise<{ clientSecret: string; paymentId: string }>;
 }
+
+export async function listPayments(token: string) {
+  const res = await fetch(`${API_BASE}/api/payments`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error(`Liste paiements échouée (${res.status})`);
+  return res.json();
+}
+
+export async function getPayment(token: string, id: string) {
+  const res = await fetch(`${API_BASE}/api/payments/${id}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error(`Paiement ${id} introuvable (${res.status})`);
+  return res.json();
+}
+
+// Tickets
+export async function listTickets(token: string) {
+  const res = await fetch(`${API_BASE}/api/tickets`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error(`Liste tickets échouée (${res.status})`);
+  return res.json();
+}
+
+export async function getTicket(token: string, id: string) {
+  const res = await fetch(`${API_BASE}/api/tickets/${id}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error(`Ticket ${id} introuvable (${res.status})`);
+  return res.json();
+}
+
+// Refunds
+export async function listRefunds(token: string) {
+  const res = await fetch(`${API_BASE}/api/refunds`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error(`Liste remboursements échouée (${res.status})`);
+  return res.json();
+}
+
+export async function getRefund(token: string, id: string) {
+  const res = await fetch(`${API_BASE}/api/refunds/${id}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error(`Remboursement ${id} introuvable (${res.status})`);
+  return res.json();
+}
+
+export async function requestRefund(token: string, paymentId: string, amount: number) {
+  const res = await fetch(`${API_BASE}/api/refunds`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ paymentId, amount })
+  });
+  if (!res.ok) throw new Error(`Demande remboursement échouée (${res.status})`);
+  return res.json();
+}
