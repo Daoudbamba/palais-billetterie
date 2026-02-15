@@ -38,6 +38,8 @@ app:
   stripe:
     secret: sk_test_xxx
     webhook-secret: whsec_xxx  
+    skip-verify: true
+    fake: true
   notification:
     reminderHours: 24
   jwt:

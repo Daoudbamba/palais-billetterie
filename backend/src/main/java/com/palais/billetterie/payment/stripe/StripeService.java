@@ -28,15 +28,18 @@ public class StripeService {
 
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
+        private final boolean fake;
 
-    public StripeService(
+        public StripeService(
             PaymentRepository paymentRepository,
             OrderRepository orderRepository,
-            @Value("${app.stripe.secret}") String stripeSecret
+                        @Value("${app.stripe.secret}") String stripeSecret,
+                        @Value("${app.stripe.fake:false}") boolean fake
     ) {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
-        Stripe.apiKey = stripeSecret;
+                Stripe.apiKey = stripeSecret;
+                this.fake = fake;
     }
 
         @Transactional
@@ -56,29 +59,35 @@ public class StripeService {
         Objects.requireNonNull(payment, "payment must not be null");
         paymentRepository.save(payment);
 
-        PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
-                .setAmount((long) (order.getAmount() * 100)) // en centimes
-                .setCurrency("eur")
-                .putMetadata("paymentId", payment.getId().toString())
-                .putMetadata("orderId", orderId.toString())
-                .build();
-
-                PaymentIntent intent;
-                try {
-                        intent = PaymentIntent.create(params);
-                } catch (Exception e) {
-                        throw new BadRequestException("Échec de création PaymentIntent: " + e.getMessage());
-                }
-
-        payment.setProviderPaymentId(intent.getId());
-        Objects.requireNonNull(payment, "payment must not be null");
-        paymentRepository.save(payment);
-
         Map<String, Object> response = new HashMap<>();
-        response.put("clientSecret", intent.getClientSecret());
-        response.put("paymentId", payment.getId());
+        if (fake) {
+            // Dev fake: ne pas appeler Stripe, simuler un PaymentIntent
+            String fakeIntentId = "pi_dev_" + payment.getId();
+            payment.setProviderPaymentId(fakeIntentId);
+            paymentRepository.save(payment);
+            response.put("clientSecret", "secret_dev_" + payment.getId());
+            response.put("paymentId", payment.getId());
+        } else {
+            PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                    .setAmount((long) (order.getAmount() * 100)) // en centimes
+                    .setCurrency("eur")
+                    .putMetadata("paymentId", payment.getId().toString())
+                    .putMetadata("orderId", orderId.toString())
+                    .build();
 
-                return response;
+            PaymentIntent intent;
+            try {
+                intent = PaymentIntent.create(params);
+            } catch (Exception e) {
+                throw new BadRequestException("Échec de création PaymentIntent: " + e.getMessage());
+            }
+            payment.setProviderPaymentId(intent.getId());
+            paymentRepository.save(payment);
+            response.put("clientSecret", intent.getClientSecret());
+            response.put("paymentId", payment.getId());
+        }
+
+        return response;
         }
 
         /**
