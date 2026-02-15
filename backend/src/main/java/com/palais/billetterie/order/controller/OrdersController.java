@@ -5,9 +5,11 @@ import com.palais.billetterie.event.domain.Event;
 import com.palais.billetterie.event.repository.EventRepository;
 import com.palais.billetterie.order.domain.Order;
 import com.palais.billetterie.order.domain.OrderStatus;
+import com.palais.billetterie.order.dto.CreateOrderRequest;
 import com.palais.billetterie.order.repository.OrderRepository;
 import com.palais.billetterie.user.domain.User;
 import com.palais.billetterie.user.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,18 +37,10 @@ public class OrdersController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(@RequestBody Map<String, Object> body) {
-        Object evIdObj = body.get("eventId");
-        Object qtyObj = body.getOrDefault("quantity", 1);
-        if (evIdObj == null) throw new BadRequestException("eventId requis");
-
-        UUID eventId = UUID.fromString(String.valueOf(evIdObj));
-        int quantity;
-        try {
-            quantity = Integer.parseInt(String.valueOf(qtyObj));
-        } catch (Exception e) {
-            throw new BadRequestException("quantity invalide");
-        }
+    public ResponseEntity<Map<String, Object>> create(@Valid @RequestBody CreateOrderRequest request) {
+        UUID eventId = request.getEventId();
+        if (eventId == null) throw new BadRequestException("eventId requis");
+        int quantity = request.getQuantity() == null ? 1 : request.getQuantity();
         if (quantity < 1) throw new BadRequestException("quantity doit être >= 1");
 
         Event event = eventRepository.findById(eventId).orElseThrow(() -> new BadRequestException("Événement introuvable"));
@@ -66,6 +60,7 @@ public class OrdersController {
                 .user(user)
                 .event(event)
                 .amount(amount)
+            .quantity(quantity)
                 .status(OrderStatus.PENDING)
                 .createdAt(Instant.now())
                 .build();
@@ -73,10 +68,10 @@ public class OrdersController {
         orderRepository.save(order);
 
         return ResponseEntity.ok(Map.of(
-                "orderId", order.getId(),
-                "status", order.getStatus(),
-                "amount", order.getAmount(),
-                "quantity", quantity
+            "orderId", order.getId(),
+            "status", order.getStatus(),
+            "amount", order.getAmount(),
+            "quantity", order.getQuantity()
         ));
     }
 
