@@ -13,6 +13,7 @@ export default function EventsPage() {
   const [busy, setBusy] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const pollRef = useRef<any>(null);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
@@ -35,7 +36,8 @@ export default function EventsPage() {
         setMessage('Veuillez vous connecter avant de commander.');
         return;
       }
-      const resp = await createOrder(token, { eventId: evId, quantity: 1 });
+      const qty = quantities[evId] && quantities[evId] > 0 ? quantities[evId] : 1;
+      const resp = await createOrder(token, { eventId: evId, quantity: qty });
       if (resp?.orderId) {
         setOrderId(String(resp.orderId));
       }
@@ -126,6 +128,12 @@ export default function EventsPage() {
             <li key={ev.id} style={{ border: '1px solid #ddd', padding: 12 }}>
               <strong>{ev.title}</strong>
               <div>Capacité: {ev.capacity}</div>
+              <div style={{ marginTop: 8 }}>
+                <label>
+                  Quantité:&nbsp;
+                  <input type="number" min={1} value={quantities[ev.id] ?? 1} onChange={e => setQuantities(prev => ({ ...prev, [ev.id]: Math.max(1, Number(e.target.value) || 1) }))} style={{ width: 80 }} />
+                </label>
+              </div>
               <button onClick={() => order(ev.id)} style={{ marginTop: 8 }}>Commander</button>
             </li>
           ))}
