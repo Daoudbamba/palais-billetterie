@@ -5,10 +5,16 @@ Assurer la cohérence entre les entités JPA et le schéma Flyway via `ddl-auto:
 
 ## Changements clés
 - Mise à jour de `application.yml` (`spring.jpa.hibernate.ddl-auto: validate`).
+- `spring.sql.init.mode: never` et `defer-datasource-initialization: false`.
+- Flyway actif et exécuté avant l’initialisation JPA.
 
 ## Tests / Vérifications
 - Démarrer l’app, vérifier qu’aucune erreur de mapping n’est levée.
 - Fumigène: appels `GET /api/health`, `GET /api/events`.
+- Flyway indique `Schema up to date`.
 
 ## Risques et rollback
 - Risque faible: si un mapping est invalide, l’app ne démarre pas → corriger entités/migrations.
+
+## Base de PR
+- `develop`
