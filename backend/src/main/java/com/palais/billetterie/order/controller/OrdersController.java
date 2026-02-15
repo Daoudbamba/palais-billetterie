@@ -39,7 +39,7 @@ public class OrdersController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(@Valid @RequestBody CreateOrderRequest request) {
+    public ResponseEntity<OrderResponse> create(@Valid @RequestBody CreateOrderRequest request) {
         UUID eventId = request.getEventId();
         if (eventId == null) throw new BadRequestException("eventId requis");
         int quantity = request.getQuantity() == null ? 1 : request.getQuantity();
@@ -67,14 +67,9 @@ public class OrdersController {
                 .createdAt(Instant.now())
                 .build();
 
-        orderRepository.save(order);
+        Order saved = orderRepository.save(order);
 
-        return ResponseEntity.ok(Map.of(
-            "orderId", order.getId(),
-            "status", order.getStatus(),
-            "amount", order.getAmount(),
-            "quantity", order.getQuantity()
-        ));
+        return ResponseEntity.ok(OrderResponse.from(saved));
     }
 
     @GetMapping
