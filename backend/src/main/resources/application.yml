@@ -1,20 +1,49 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/ticketing}
-    username: ${DB_USERNAME:ticket}
-    password: ${DB_PASSWORD:ticketpwd}
+    url: jdbc:postgresql://127.0.0.1:5434/ticketing
+    username: ticket
+    password: ticketpwd
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
+    defer-datasource-initialization: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    url: jdbc:postgresql://127.0.0.1:5434/ticketing
+    user: ticket
+    password: ticketpwd
+  sql:
+    init:
+      mode: never
   main:
     banner-mode: off
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 2525
+    username: ${MAILTRAP_USER:}
+    password: ${MAILTRAP_PASS:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 
 server:
   port: 8080
 
 app:
   stripe:
-    secret: ${STRIPE_SECRET:sk_test_replace}
+    secret: sk_test_xxx
+    webhook-secret: whsec_xxx  
+    webhook-skip-verify: true
+    fake: true
+  notification:
+    reminderHours: 24
+  jwt:
+    accessSecret: change_me_access_secret
+    refreshSecret: change_me_refresh_secret
+    accessTtlMinutes: 15
+    refreshTtlDays: 14

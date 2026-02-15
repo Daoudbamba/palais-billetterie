@@ -1,0 +1,175 @@
+
+Endpoints Postman
+
+http://localhost:8080/api/events
+Santé: GET http://localhost:8080/api/health → ok
+Liste événements: GET http://localhost:8080/api/events → retourne 2 éléments
+Détail: GET http://localhost:8080/api/events/5f4a3c7e-6a2b-4b6a-bf2f-3d6b9f1e2a10
+Création: POST http://localhost:8080/api/events
+{
+"title": "Expo Photo",
+"description": "Collection 2026",
+"startDateTime": "2026-04-10T10:00:00Z",
+"endDateTime": "2026-04-10T18:00:00Z",
+"venue": "Galerie",
+"capacity": 200
+}
+
+
+Démarrer la base:
+docker compose -f infra/docker-compose.yml up -d
+
+Arrêter/Nettoyer si besoin:
+docker compose -f infra/docker-compose.yml down
+
+Lancer le backend:
+mvn -q -f backend/pom.xml spring-boot:run
+
+Vérifier rapidement:
+curl -sS http://localhost:8080/api/health
+curl -sS http://localhost:8080/api/events
+
+
+Si le port 8080 est occupé, arrêtez l’instance précédente:
+pkill -f "spring-boot:run" || true
+
+
+
+Merci. Plan rapide: je liste les fonctionnalités, j’inventorie les dossiers/fichiers, puis je te propose une analyse claire de ce qui manque pour rendre le backend encore plus robuste et innovant.
+
+Fonctionnalités Implémentées
+
+Authentification/JWT: inscription, login, refresh; tokens d’accès/refresh; filtre JWT et CORS.
+Sécurité & Autorisations: règles fines par module; rôle CONTROLLER réservé pour /api/scan/**; admin dashboard protégé.
+Utilisateurs: CRUD admin, DTOs, validations, réponses typées.
+Événements: lecture publique; création/mise à jour/suppression par PROMOTER/ADMIN.
+Commandes: création/mise à jour par USER/ADMIN; suppression admin; lecture limitée au propriétaire (via requêtes repository).
+Paiements: Stripe PaymentIntent; webhook succès/échec; agrégations (revenus totaux, par jour, par événement).
+Remboursements: demande, statut, cascade logique (paiement, commande, tickets) + emails; métriques refund.
+Tickets: création (email de confirmation), lecture admin/promoter; statut VALID/USED/CANCELLED; agrégations utilisation.
+Notifications: envoi email, rappel d’événements avec @Scheduled.
+Scan Mobile: vérification et usage du ticket; QR signé (HMAC), anti‑rejeu par nonce, fenêtre temporelle, rate‑limit par contrôleur, audit persistant des scans.
+Admin Dashboard: summary, timeseries (day/week/month), top-events (tri revenus/tickets, filtres), KPIs; caches mémoire (TTL 60s); indexes DB.
+Santé & Exceptions: health endpoint; gestion globale d’erreurs en français.
+Structure Dossiers & Fichiers (backend Java)
+
+Racine applicative:
+TicketingApplication.java
+application.yml
+Commun:
+common/controller/HealthController.java
+common/exceptions/GlobalExceptionHandler.java
+common/exceptions/BadRequestException.java
+Sécurité:
+security/SecurityConfig.java
+security/JwtAuthenticationFilter.java
+security/jwt/JwtService.java
+security/jwt/RefreshToken.java
+security/jwt/RefreshTokenRepository.java
+Auth:
+auth/controller/AuthController.java
+auth/service/AuthService.java
+auth/dto/{LoginRequest,RegisterRequest,RefreshRequest,TokenResponse}.java
+Utilisateurs:
+user/domain/{User,Role}.java
+user/repository/UserRepository.java
+user/service/UserService.java
+user/controller/UserController.java
+user/dto/{UserCreateRequest,UserResponse}.java
+Événements:
+event/domain/Event.java
+event/repository/EventRepository.java
+event/service/EventService.java
+event/controller/EventsController.java
+event/dto/{EventCreateRequest,EventResponse}.java
+Commandes:
+order/domain/{Order,OrderStatus}.java
+order/repository/OrderRepository.java
+order/service/OrderService.java
+order/controller/OrderController.java
+order/dto/{OrderCreateRequest,OrderUpdateRequest}.java
+Paiements:
+payment/domain/{Payment,PaymentStatus}.java
+payment/repository/PaymentRepository.java
+payment/service/PaymentService.java
+payment/controller/PaymentController.java
+payment/dto/{PaymentCreateRequest,PaymentUpdateRequest}.java
+payment/stripe/{StripeService,StripeWebhookController}.java
+Remboursements:
+refund/domain/{Refund,RefundStatus}.java
+refund/repository/RefundRepository.java
+refund/service/RefundService.java
+refund/controller/RefundController.java
+refund/dto/RefundCreateRequest.java
+Tickets:
+ticket/domain/{Ticket,TicketStatus}.java
+ticket/repository/TicketRepository.java
+ticket/service/TicketService.java
+ticket/controller/TicketController.java
+ticket/dto/{TicketCreateRequest,TicketUpdateRequest}.java
+Notifications:
+notification/service/{EmailService,EventReminderService}.java
+notification/controller/NotificationTestController.java
+Scan Mobile:
+scan/controller/MobileScanController.java
+scan/service/ScanService.java
+scan/dto/{ScanRequest,ScanResponse}.java
+scan/domain/{ScanLog,ScanResult}.java
+scan/repository/ScanLogRepository.java
+Admin Dashboard:
+admin/dashboard/controller/AdminDashboardController.java
+admin/dashboard/service/AdminDashboardService.java
+admin/dashboard/dto/{DashboardSummaryDto,DashboardTimeSeriesDto,TopEventStatDto,DashboardKpisDto}.java
+Autres Dossiers du Workspace
+
+Infra & Docs: docker-compose.yml, cahier-des-charges.html, docs/uml/drawio/*.drawio, pdf
+Frontend (Next.js minimal): frontend/src/app/{layout.tsx,page.tsx}, package.json
+Build: pom.xml, scripts shell: init-branches.sh
+Analyse: Ce qui Manque pour un Backend Robuste & Innovant
+
+Tests & Qualité
+Unitaire et intégration (services, repositories, sécurité); tests d’API (MockMvc); contrats des webhooks Stripe.
+Données de test, fixtures; couverture et CI (GitHub Actions).
+Tests de performance (chargement dashboard/scan), tests E2E basiques.
+Migrations & Données
+Gestion de schéma avec Flyway/Liquibase au lieu de ddl-auto; migrations versionnées (index, colonnes, contraintes).
+Seeds idempotents pour rôles, utilisateur admin, événements de démo.
+Sécurité & Conformité
+Gestion secrets via variables d’environnement (Stripe, JWT, scan.qrSecret) et @ConfigurationProperties.
+RBAC par événement pour les contrôleurs (lier User.CONTROLLER aux eventId autorisés; valider côté ScanService).
+Idempotency keys sur création de commandes/paiements; protection contre double traitement.
+Hardening JWT: liste noire de refresh tokens révoqués, rotation stricte, détection d’usage anormal.
+Validation stricte DTOs (tailles, formats, emails, téléphones), pagination sécurisée sur listes.
+Journalisation d’accès et export audit (CSV/JSON) pour scan_logs et opérations sensibles.
+Observabilité & Ops
+Logs structurés (JSON), corrélation (traceId); métriques (Micrometer/Prometheus): latence scan, erreurs, taux d’acceptation.
+Traces (OpenTelemetry); health probes étendus (DB, mail, Stripe).
+Alerting basique (seuils erreurs, pics de rejets de scans).
+Robustesse & Résilience
+Circuit breakers/retry pour Stripe, SMTP; backoff exponentiel; file d’attente (ex: Redis/RabbitMQ) pour webhooks et mails.
+Cache distribué (Redis) pour dashboard au lieu de mémoire locale; invalidation sur mutations.
+Verrous ou check concurrents lors de use tickets pour éviter double scan simultané.
+API & DX
+Versionnement (/api/v1), documentation OpenAPI/Swagger; codes d’erreurs normalisés; limites de débit globales.
+Uploads/imports CSV (contrôleurs, événements), exports (scans, ventes).
+Feature flags (ex: activer QR signé par événement).
+Données & Performance
+Index additionnels: ticket(code) unique; contraintes FK; requêtes analytiques optimisées.
+Pagination/tri sur listes; temps de réponse dashboard avec pré‑agrégations quotidiennes.
+Produits Innovants
+PWA contrôleur hors‑ligne avec synchronisation; passes Apple/Google Wallet; support NFC (optionnel).
+Temps réel: WebSocket pour flux de scans live; tableau de bord dynamique.
+Sécurité Produit
+Politique mot de passe, brute‑force login; reCAPTCHA/anti‑bots sur endpoints publics sensibles.
+RGPD: gestion consentements, suppression de compte, rétention de logs.
+Proposition de Priorités (Prochaines Étapes)
+
+Mise en place Flyway + migrations initiales; secrets via env/ConfigurationProperties.
+RBAC par événement pour CONTROLLER + vérification dans ScanService.
+Tests critiques: ScanService (concurrence, signature), webhooks Stripe, dashboard service.
+Observabilité: Micrometer + endpoints actuateurs; logs JSON; métriques clés.
+Cache Redis pour dashboard + invalidation; lock de scan pour éviter double usage.
+OpenAPI + API versionnée; pagination sur toutes les listes.
+Si tu veux, je démarre par Flyway + RBAC par événement pour les contrôleurs, puis j’enchaîne sur tests et observabilité.
+
+GPT-5 • 1x
