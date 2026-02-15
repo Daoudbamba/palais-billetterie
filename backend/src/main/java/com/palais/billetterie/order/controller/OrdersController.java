@@ -6,6 +6,8 @@ import com.palais.billetterie.event.repository.EventRepository;
 import com.palais.billetterie.order.domain.Order;
 import com.palais.billetterie.order.domain.OrderStatus;
 import com.palais.billetterie.order.dto.CreateOrderRequest;
+import com.palais.billetterie.order.dto.OrderResponse;
+import com.palais.billetterie.order.dto.UpdateOrderRequest;
 import com.palais.billetterie.order.repository.OrderRepository;
 import com.palais.billetterie.user.domain.User;
 import com.palais.billetterie.user.repository.UserRepository;
@@ -76,17 +78,55 @@ public class OrdersController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Order>> listForUser() {
+    public ResponseEntity<List<OrderResponse>> listForUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getName() == null) throw new BadRequestException("Utilisateur non authentifié");
         User user = userRepository.findByEmail(auth.getName()).orElseThrow(() -> new BadRequestException("Utilisateur introuvable"));
         List<Order> orders = orderRepository.findAllByUser_Id(user.getId());
-        return ResponseEntity.ok(orders);
+        List<OrderResponse> resp = orders.stream().map(OrderResponse::from).toList();
+        return ResponseEntity.ok(resp);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Order> get(@PathVariable("id") UUID id) {
+    public ResponseEntity<OrderResponse> get(@PathVariable("id") UUID id) {
         Order order = orderRepository.findById(id).orElseThrow();
-        return ResponseEntity.ok(order);
+        return ResponseEntity.ok(OrderResponse.from(order));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<OrderResponse> update(@PathVariable("id") UUID id,
+                                                @Valid @RequestBody UpdateOrderRequest request) {
+        Order order = orderRepository.findById(id).orElseThrow(() -> new BadRequestException("Commande introuvable"));
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException("Seules les commandes en attente peuvent être modifiées");
+        }
+
+        int quantity = request.getQuantity() == null ? order.getQuantity() == null ? 1 : order.getQuantity() : request.getQuantity();
+        if (quantity < 1) throw new BadRequestException("quantity doit être >= 1");
+
+        Event event = order.getEvent();
+        if (event.getCapacity() != null && quantity > event.getCapacity()) {
+            throw new BadRequestException("Quantité dépasse la capacité de l'événement");
+        }
+
+        double unitPrice = 10.0; // mode dev
+        order.setQuantity(quantity);
+        order.setAmount(unitPrice * quantity);
+        orderRepository.save(order);
+        return ResponseEntity.ok(OrderResponse.from(order));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<OrderResponse> cancel(@PathVariable("id") UUID id) {
+        Order order = orderRepository.findById(id).orElseThrow(() -> new BadRequestException("Commande introuvable"));
+        if (order.getStatus() == OrderStatus.PAID) {
+            throw new BadRequestException("Impossible d'annuler une commande payée");
+        }
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            return ResponseEntity.ok(OrderResponse.from(order));
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+        return ResponseEntity.ok(OrderResponse.from(order));
     }
 }
