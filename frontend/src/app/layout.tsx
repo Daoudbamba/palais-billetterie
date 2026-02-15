@@ -12,6 +12,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <a href="/auth/login">Connexion</a>
             {' '}·{' '}
             <a href="/auth/register">Inscription</a>
+            {' '}·{' '}
+            <a href="/auth/logout">Déconnexion</a>
           </span>
         </header>
         {children}

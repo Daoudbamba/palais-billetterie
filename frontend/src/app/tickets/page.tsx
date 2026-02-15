@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { listTickets } from '../../lib/api';
 import Link from 'next/link';
 
 export default function TicketsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -14,8 +16,7 @@ export default function TicketsPage() {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-          setMessage('Veuillez vous connecter pour voir vos billets.');
-          setItems([]);
+          router.replace('/auth/login');
           return;
         }
         const data = await listTickets(token);
@@ -26,7 +27,7 @@ export default function TicketsPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [router]);
 
   return (
     <main style={{ padding: 24 }}>

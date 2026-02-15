@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { listRefunds, requestRefund } from '../../lib/api';
 import Link from 'next/link';
 
 export default function RefundsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -17,8 +19,7 @@ export default function RefundsPage() {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-          setMessage('Veuillez vous connecter pour voir vos remboursements.');
-          setItems([]);
+          router.replace('/auth/login');
           return;
         }
         const data = await listRefunds(token);
@@ -29,7 +30,7 @@ export default function RefundsPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [router]);
 
   async function submitRefund() {
     setBusy(true);

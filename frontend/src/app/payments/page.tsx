@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { listPayments } from '../../lib/api';
 import Link from 'next/link';
 
 export default function PaymentsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -14,8 +16,7 @@ export default function PaymentsPage() {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-          setMessage('Veuillez vous connecter pour voir vos paiements.');
-          setItems([]);
+          router.replace('/auth/login');
           return;
         }
         const data = await listPayments(token);
@@ -26,7 +27,7 @@ export default function PaymentsPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [router]);
 
   return (
     <main style={{ padding: 24 }}>
