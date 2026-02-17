@@ -39,15 +39,27 @@ export default function TicketDetailPage({ params }: { params: { id: string } })
       {message && <p>{message}</p>}
       {loading ? <p>Chargement…</p> : ticket ? (
         <div style={{ border: '1px solid #ddd', padding: 12 }}>
-          <div>Status: {ticket.status}</div>
+          <div style={{ marginBottom: 8 }}>
+            <div><strong>Code billet:</strong> {ticket.code ?? ticket.id}</div>
+            {ticket.status && <div><strong>Status:</strong> {ticket.status}</div>}
+            {ticket.createdAt && (
+              <div><strong>Créé le:</strong> {new Date(ticket.createdAt).toLocaleString('fr-FR')}</div>
+            )}
+          </div>
           {ticket.event && (
             <div style={{ marginTop: 8 }}>
-              <div>Événement: {ticket.event.title ?? ticket.event.id}</div>
+              <h2 style={{ margin: '8px 0 4px' }}>Événement</h2>
+              <div><strong>{ticket.event.title ?? ticket.event.id}</strong></div>
+              {ticket.event.venue && <div>Lieu: {ticket.event.venue}</div>}
+              {ticket.event.startDateTime && (
+                <div>Début: {new Date(ticket.event.startDateTime).toLocaleString('fr-FR')}</div>
+              )}
             </div>
           )}
           {ticket.order && (
             <div style={{ marginTop: 8 }}>
-              <div>Commande: {ticket.order.id}</div>
+              <h2 style={{ margin: '8px 0 4px' }}>Commande</h2>
+              <div>Id commande: {ticket.order.id}</div>
             </div>
           )}
         </div>

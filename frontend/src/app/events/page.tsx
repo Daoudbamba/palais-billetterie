@@ -1,19 +1,33 @@
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
-import { getEvents, createOrder, createStripeIntent, getPayment } from '../../lib/api';
+import { useRouter } from 'next/navigation';
+import { getEvents, createOrder, createStripeIntent, getPayment, simulateStripeSuccess, ApiError } from '../../lib/api';
+import { StripeCardSection } from '../payments/StripeCardSection';
 import Link from 'next/link';
 
 export default function EventsPage() {
+  const router = useRouter();
+  const isStripeDev = process.env.NEXT_PUBLIC_STRIPE_DEV_MODE === 'true';
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [orderId, setOrderId] = useState('c1d2e3f4-1111-2222-3333-444455556666');
   const [intent, setIntent] = useState<{ clientSecret: string; paymentId: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [simulating, setSimulating] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const pollRef = useRef<any>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+  function handleApiError(e: any, prefix: string) {
+    if (e instanceof ApiError && e.status === 401) {
+      setMessage('Session expirée ou non authentifiée. Merci de vous reconnecter.');
+      router.push('/auth/login');
+      return;
+    }
+    setMessage(`${prefix}: ${e?.message ?? 'Erreur inconnue'}`);
+  }
 
   useEffect(() => {
     (async () => {
@@ -43,7 +57,7 @@ export default function EventsPage() {
       }
       setMessage(`Commande créée: ${JSON.stringify(resp)}`);
     } catch (e: any) {
-      setMessage(`Erreur commande: ${e.message}`);
+      handleApiError(e, 'Erreur commande');
     }
   }
 
@@ -62,7 +76,7 @@ export default function EventsPage() {
       setMessage(`Intent créé. paymentId=${resp.paymentId}`);
       startPolling(resp.paymentId);
     } catch (e: any) {
-      setMessage(`Erreur intent: ${e.message}`);
+      handleApiError(e, 'Erreur intent');
     } finally {
       setBusy(false);
     }
@@ -79,7 +93,7 @@ export default function EventsPage() {
       const p = await getPayment(token, String(intent.paymentId));
       setPaymentStatus(p.status ?? 'INCONNU');
     } catch (e: any) {
-      setMessage(`Erreur statut paiement: ${e.message}`);
+      handleApiError(e, 'Erreur statut paiement');
     }
   }
 
@@ -98,7 +112,7 @@ export default function EventsPage() {
         }
       } catch (e: any) {
         stopPolling();
-        setMessage(`Polling interrompu: ${e.message}`);
+        handleApiError(e, 'Polling interrompu');
       }
     }, 3000);
   }
@@ -115,6 +129,28 @@ export default function EventsPage() {
       stopPolling();
     };
   }, []);
+
+  async function simulateSuccess() {
+    if (!intent?.paymentId) {
+      setMessage('Aucun paymentId à simuler. Créez un intent d\'abord.');
+      return;
+    }
+    setSimulating(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setMessage('Veuillez vous connecter avant de simuler un paiement.');
+        return;
+      }
+      await simulateStripeSuccess(token, String(intent.paymentId));
+      setMessage('Webhook Stripe simulé: paiement marqué comme SUCCESS.');
+      await refreshPaymentStatus();
+    } catch (e: any) {
+      handleApiError(e, 'Erreur simulation');
+    } finally {
+      setSimulating(false);
+    }
+  }
 
   return (
     <main style={{ padding: 24 }}>
@@ -140,13 +176,15 @@ export default function EventsPage() {
         </ul>
       )}
       <div style={{ marginTop: 24, paddingTop: 12, borderTop: '1px solid #ddd' }}>
-        <h2>Paiement (mode dev)</h2>
+        <h2>Paiement {isStripeDev ? '(mode dev)' : '(Stripe test/production)'}</h2>
         <label>
           Order UUID:&nbsp;
           <input value={orderId} onChange={e => setOrderId(e.target.value)} style={{ width: 380 }} />
         </label>
         <div style={{ marginTop: 8 }}>
-          <button onClick={createIntent} disabled={busy}>Créer PaymentIntent (fake)</button>
+          <button onClick={createIntent} disabled={busy}>
+            {isStripeDev ? 'Créer PaymentIntent (fake)' : 'Créer PaymentIntent'}
+          </button>
         </div>
         {intent && (
           <div style={{ marginTop: 8 }}>
@@ -155,6 +193,19 @@ export default function EventsPage() {
             <div style={{ marginTop: 8 }}>
               <button onClick={refreshPaymentStatus}>Actualiser statut paiement</button>
               {paymentStatus && <span style={{ marginLeft: 8 }}>Statut: {paymentStatus}</span>}
+            </div>
+            {isStripeDev && (
+              <div style={{ marginTop: 8 }}>
+                <button onClick={simulateSuccess} disabled={simulating}>
+                  Simuler webhook Stripe (succès)
+                </button>
+                <span style={{ marginLeft: 8 }}>
+                  ou <Link href="/tickets">voir mes billets</Link>
+                </span>
+              </div>
+            )}
+            <div style={{ marginTop: 16 }}>
+              <StripeCardSection clientSecret={intent.clientSecret} />
             </div>
           </div>
         )}

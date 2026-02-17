@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { listPayments } from '../../lib/api';
+import { listPayments, ApiError } from '../../lib/api';
 import Link from 'next/link';
 
 export default function PaymentsPage() {
@@ -10,6 +10,15 @@ export default function PaymentsPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+
+  function handleApiError(e: any) {
+    if (e instanceof ApiError && e.status === 401) {
+      setMessage('Session expirée ou non authentifiée. Merci de vous reconnecter.');
+      router.replace('/auth/login');
+      return;
+    }
+    setMessage(`Erreur: ${e?.message ?? 'Erreur inconnue'}`);
+  }
 
   useEffect(() => {
     (async () => {
@@ -22,7 +31,7 @@ export default function PaymentsPage() {
         const data = await listPayments(token);
         setItems(data);
       } catch (e: any) {
-        setMessage(`Erreur: ${e.message}`);
+        handleApiError(e);
       } finally {
         setLoading(false);
       }

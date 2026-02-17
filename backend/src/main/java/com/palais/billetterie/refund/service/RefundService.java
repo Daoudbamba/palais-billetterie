@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -69,6 +70,27 @@ public class RefundService {
 
         if (payment.getStatus() != PaymentStatus.SUCCESS) {
             throw new BadRequestException("Seuls les paiements réussis peuvent être remboursés");
+        }
+
+        // Règle simple: un seul remboursement par paiement, et sur le montant total
+        long existing = refundRepository.countByPaymentIdAndStatusIn(
+                payment.getId(),
+                Arrays.asList(RefundStatus.PENDING, RefundStatus.SUCCESS));
+        if (existing > 0) {
+            throw new BadRequestException("Une demande de remboursement existe déjà pour ce paiement");
+        }
+
+        Double alreadyRefunded = refundRepository.sumAmountByPaymentIdAndStatus(payment.getId(), RefundStatus.SUCCESS);
+        if (alreadyRefunded == null) alreadyRefunded = 0.0;
+
+        double remaining = payment.getAmount() - alreadyRefunded;
+        if (amount > remaining + 0.0001) {
+            throw new BadRequestException("Montant de remboursement trop élevé pour ce paiement");
+        }
+
+        // Pour l'instant on impose un remboursement intégral (pas de partiel)
+        if (Math.abs(amount - payment.getAmount()) > 0.0001) {
+            throw new BadRequestException("Seuls les remboursements intégraux sont supportés pour le moment");
         }
 
         Refund refund = Refund.builder()

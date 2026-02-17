@@ -32,6 +32,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/*").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/stripe/webhook").permitAll()
+                // Endpoint de simulation Stripe pour le mode dev uniquement
+                .requestMatchers(HttpMethod.POST, "/api/payments/stripe/dev/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/orders/**").hasRole("USER")
                     .requestMatchers(HttpMethod.GET, "/api/orders/**").authenticated()

@@ -36,10 +36,14 @@ server:
 
 app:
   stripe:
-    secret: sk_test_xxx
-    webhook-secret: whsec_xxx  
-    skip-verify: true
-    fake: true
+    # Clé secrète Stripe (par défaut en mode test, à surcharger en prod via variable d'env STRIPE_SECRET_KEY)
+    secret: ${STRIPE_SECRET_KEY:sk_test_xxx}
+    # Secret du webhook Stripe (à surcharger en prod via STRIPE_WEBHOOK_SECRET)
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_xxx}
+    # En dev, on peut ignorer la vérification de signature du webhook (STRIPE_SKIP_VERIFY=true)
+    skip-verify: ${STRIPE_SKIP_VERIFY:true}
+    # Mode fake pour ne pas appeler Stripe en dev (STRIPE_FAKE=true). Mettre STRIPE_FAKE=false en prod.
+    fake: ${STRIPE_FAKE:true}
   notification:
     reminderHours: 24
   jwt:

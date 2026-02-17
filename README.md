@@ -47,13 +47,15 @@ Backend (`backend/src/main/resources/application.yml`)
 - `spring.datasource.username`: `ticket`
 - `spring.datasource.password`: `ticketpwd`
 - `app.jwt.accessSecret` / `app.jwt.refreshSecret`: secrets à définir
-- `app.stripe.secret`: clé Stripe (dev)
-- `app.stripe.webhook-secret`: secret webhook (dev)
-- `app.stripe.skip-verify`: `true` en dev (ne pas vérifier la signature)
-- `app.stripe.fake`: `true` en dev (intent Stripe simulé)
+- `app.stripe.secret`: lu depuis `STRIPE_SECRET_KEY` (par défaut `sk_test_xxx`)
+- `app.stripe.webhook-secret`: lu depuis `STRIPE_WEBHOOK_SECRET` (par défaut `whsec_xxx`)
+- `app.stripe.skip-verify`: lu depuis `STRIPE_SKIP_VERIFY` (par défaut `true` en dev)
+- `app.stripe.fake`: lu depuis `STRIPE_FAKE` (par défaut `true` en dev, à passer à `false` en prod)
 
 Frontend (`frontend/.env.local`)
 - `NEXT_PUBLIC_API_BASE=http://localhost:8080`
+ - `NEXT_PUBLIC_STRIPE_PK`=clé publique Stripe (test ou live, pour Stripe Elements)
+ - `NEXT_PUBLIC_STRIPE_DEV_MODE`=`true` pour afficher les outils de simulation (fake) en dev, omettre ou mettre `false` en préprod/prod
 
 ## Endpoints clés
 - `GET /api/health` — ping
@@ -63,6 +65,36 @@ Frontend (`frontend/.env.local`)
 - `PATCH /api/orders/{id}` — modifier quantité (PENDING)
 - `PATCH /api/orders/{id}/cancel` — annuler (non PAID)
 - `POST /api/payments/stripe/webhook` — webhook Stripe (skip-verify en dev)
+
+### Webhook Stripe (configuration)
+
+- URL à déclarer dans Stripe: `https://<votre-domaine>/api/payments/stripe/webhook`
+- Types d'événements utilisés: `payment_intent.succeeded`, `payment_intent.payment_failed`
+- En développement:
+	- `STRIPE_FAKE=true` (pas d'appel réel à Stripe, PaymentIntent simulé)
+	- `STRIPE_SKIP_VERIFY=true` (signature non vérifiée, utile pour tests locaux/Postman)
+- En production/préproduction:
+	- `STRIPE_FAKE=false` (appels réels à Stripe)
+	- `STRIPE_SKIP_VERIFY=false` (oblige la présence de l'en-tête `Stripe-Signature` et vérification avec `STRIPE_WEBHOOK_SECRET`)
+	- `STRIPE_SECRET_KEY` et `STRIPE_WEBHOOK_SECRET` configurés avec les valeurs Stripe (test ou live)
+
+### Passer en mode Stripe test réel (recommandé avant la prod)
+
+1. Dans Stripe Dashboard, récupérer:
+	- la clé secrète test (`STRIPE_SECRET_KEY`),
+	- la clé publique test (`NEXT_PUBLIC_STRIPE_PK`),
+	- le secret de webhook test (`STRIPE_WEBHOOK_SECRET`).
+2. Côté backend (env ou docker compose):
+	- `STRIPE_SECRET_KEY=<clé secrète test>`
+	- `STRIPE_WEBHOOK_SECRET=<secret webhook test>`
+	- `STRIPE_FAKE=false`
+	- `STRIPE_SKIP_VERIFY=false`
+3. Côté frontend (`frontend/.env.local`):
+	- `NEXT_PUBLIC_STRIPE_PK=<clé publique test>`
+	- `NEXT_PUBLIC_STRIPE_DEV_MODE=false` (ou supprimer la variable)
+4. Dans Stripe Dashboard, déclarer l'URL de webhook:
+	- `https://<votre-domaine>/api/payments/stripe/webhook` (ou `http://localhost:8080/...` via Stripe CLI en local).
+5. Vérifier le flux complet: création commande → PaymentIntent via UI → saisie carte test dans Stripe Elements → réception de l'événement webhook → paiement `SUCCESS` et billet généré.
 
 ## Branches
 - `main` — stable

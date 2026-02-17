@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 import java.util.Objects;
@@ -24,6 +26,8 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/api/payments/stripe")
 public class StripeWebhookController {
+
+    private static final Logger log = LoggerFactory.getLogger(StripeWebhookController.class);
 
     private final PaymentService paymentService;
     private final TicketService ticketService;
@@ -57,6 +61,7 @@ public class StripeWebhookController {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode root = mapper.readTree(payload);
                 String type = root.path("type").asText();
+                log.info("[StripeWebhook][DEV] Received event type={} (skipVerify=true)", type);
                 JsonNode obj = root.path("data").path("object");
                 String paymentIntentId = obj.path("id").asText("pi_dev");
                 String paymentIdStr = obj.path("metadata").path("paymentId").asText();
@@ -100,7 +105,13 @@ public class StripeWebhookController {
 
                 return ResponseEntity.ok("OK");
             } else {
+                if (sigHeader == null || sigHeader.isBlank()) {
+                    log.warn("[StripeWebhook] Missing Stripe-Signature header while skipVerify=false");
+                    return ResponseEntity.badRequest().body("Missing Stripe-Signature header");
+                }
+
                 Event event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
+                log.info("[StripeWebhook] Received verified event type={}", event.getType());
                 if ("payment_intent.succeeded".equals(event.getType())) {
                     PaymentIntent intent = (PaymentIntent) event.getDataObjectDeserializer()
                             .getObject().orElseThrow();
@@ -153,6 +164,48 @@ public class StripeWebhookController {
             
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Webhook error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Endpoint de développement pour simuler un paiement réussi
+     * sans passer par Stripe ni vérifier la signature.
+     *
+     * À utiliser uniquement en local / dev avec STRIPE_FAKE=true.
+     */
+    @PostMapping("/dev/simulate-success")
+    @Transactional
+    public ResponseEntity<String> simulateSuccess(@RequestParam("paymentId") UUID paymentId) {
+        try {
+            Objects.requireNonNull(paymentId, "paymentId is required");
+            var payment = paymentService.getById(paymentId);
+            var order = payment.getOrder();
+            Objects.requireNonNull(order, "order is required on payment");
+
+            log.info("[StripeWebhook][DEV] Simulating success for paymentId={} orderId={}",
+                    paymentId, order.getId());
+
+            // Met à jour le paiement et la commande comme dans le webhook réel
+            paymentService.updateStatus(paymentId, PaymentStatus.SUCCESS, "pi_dev_simulated");
+
+            orderRepository.findById(order.getId()).ifPresent(o -> {
+                o.setStatus(OrderStatus.PAID);
+                orderRepository.save(o);
+                ticketService.create(o.getUser().getId(), o.getEvent().getId(), o.getId());
+                try {
+                    emailService.send(o.getUser().getEmail(),
+                            "Paiement simulé (dev)",
+                            "Bonjour " + o.getUser().getName() + ",\n\n" +
+                                    "Votre paiement de test a été marqué comme réussi pour l'événement \"" + o.getEvent().getTitle() + "\".");
+                } catch (Exception ex) {
+                    // ne bloque pas en dev
+                }
+            });
+
+            return ResponseEntity.ok("Simulated success for payment " + paymentId);
+        } catch (Exception e) {
+            log.error("[StripeWebhook][DEV] Error simulating success", e);
+            return ResponseEntity.badRequest().body("Simulation error: " + e.getMessage());
         }
     }
 }

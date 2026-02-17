@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { listRefunds, requestRefund } from '../../lib/api';
+import { listRefunds, requestRefund, ApiError } from '../../lib/api';
 import Link from 'next/link';
 
 export default function RefundsPage() {
@@ -13,6 +13,15 @@ export default function RefundsPage() {
   const [paymentId, setPaymentId] = useState('');
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
+
+  function handleApiError(e: any, prefix = 'Erreur') {
+    if (e instanceof ApiError && e.status === 401) {
+      setMessage('Session expirée ou non authentifiée. Merci de vous reconnecter.');
+      router.replace('/auth/login');
+      return;
+    }
+    setMessage(`${prefix}: ${e?.message ?? 'Erreur inconnue'}`);
+  }
 
   useEffect(() => {
     (async () => {
@@ -25,7 +34,7 @@ export default function RefundsPage() {
         const data = await listRefunds(token);
         setItems(data);
       } catch (e: any) {
-        setMessage(`Erreur: ${e.message}`);
+        handleApiError(e);
       } finally {
         setLoading(false);
       }
@@ -49,7 +58,7 @@ export default function RefundsPage() {
       const r = await requestRefund(token, paymentId, amt);
       setMessage(`Remboursement demandé: ${r.id}`);
     } catch (e: any) {
-      setMessage(`Erreur remboursement: ${e.message}`);
+      handleApiError(e, 'Erreur remboursement');
     } finally {
       setBusy(false);
     }
@@ -60,6 +69,10 @@ export default function RefundsPage() {
       <h1>Remboursements</h1>
       <p>
         <Link href="/auth/login">Connexion</Link> · <Link href="/auth/register">Inscription</Link>
+      </p>
+      <p style={{ maxWidth: 600, fontSize: 14, color: '#555' }}>
+        Règles actuelles : un seul remboursement possible par paiement et uniquement
+        sur le montant total payé (pas de remboursement partiel).
       </p>
       {message && <p>{message}</p>}
       <div style={{ border: '1px solid #ddd', padding: 12, marginBottom: 16 }}>
@@ -74,10 +87,39 @@ export default function RefundsPage() {
         <ul style={{ display: 'grid', gap: 12 }}>
           {items.map(r => (
             <li key={r.id} style={{ border: '1px solid #ddd', padding: 12 }}>
-              <div><strong>Refund</strong> {r.id}</div>
-              <div>Statut: {r.status}</div>
-              <div>Montant: {r.amount}</div>
-              {r.payment?.id && <div>Paiement: {r.payment.id}</div>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <div>
+                  <strong>Refund</strong> {r.id}
+                  {r.status && (
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        fontSize: 12,
+                        background:
+                          r.status === 'SUCCESS'
+                            ? '#e6ffed'
+                            : r.status === 'PENDING'
+                            ? '#fff7e6'
+                            : '#fde2e1',
+                        border: '1px solid #ddd',
+                      }}
+                    >
+                      {r.status}
+                    </span>
+                  )}
+                </div>
+                {r.createdAt && (
+                  <span style={{ fontSize: 12, color: '#666' }}>
+                    Créé le {new Date(r.createdAt).toLocaleString('fr-FR')}
+                  </span>
+                )}
+              </div>
+              <div style={{ marginTop: 4 }}>Montant remboursé: {r.amount} €</div>
+              {r.payment?.id && (
+                <div style={{ marginTop: 2 }}>Paiement: {r.payment.id}</div>
+              )}
             </li>
           ))}
         </ul>
