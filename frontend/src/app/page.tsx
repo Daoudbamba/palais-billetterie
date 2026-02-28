@@ -1,17 +1,22 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { getEvents } from '../lib/api'
 
 export default function HomePage() {
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    fetch(`${base}/api/events`)
-      .then(r => r.json())
-      .then(setEvents)
-      .catch(() => setEvents([]))
-      .finally(() => setLoading(false))
+    (async () => {
+      try {
+        const data = await getEvents();
+        setEvents(data);
+      } catch {
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [])
 
   return (

@@ -1,4 +1,4 @@
-package com.palais.billetterie.controller;
+package com.palais.billetterie.common.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

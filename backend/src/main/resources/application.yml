@@ -1,20 +1,53 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/ticketing}
-    username: ${DB_USERNAME:ticket}
-    password: ${DB_PASSWORD:ticketpwd}
+    url: jdbc:postgresql://127.0.0.1:5434/ticketing
+    username: ticket
+    password: ticketpwd
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
+    defer-datasource-initialization: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    url: jdbc:postgresql://127.0.0.1:5434/ticketing
+    user: ticket
+    password: ticketpwd
+  sql:
+    init:
+      mode: never
   main:
     banner-mode: off
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 2525
+    username: ${MAILTRAP_USER:}
+    password: ${MAILTRAP_PASS:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 
 server:
   port: 8080
 
 app:
   stripe:
-    secret: ${STRIPE_SECRET:sk_test_replace}
+    # Clé secrète Stripe (par défaut en mode test, à surcharger en prod via variable d'env STRIPE_SECRET_KEY)
+    secret: ${STRIPE_SECRET_KEY:sk_test_xxx}
+    # Secret du webhook Stripe (à surcharger en prod via STRIPE_WEBHOOK_SECRET)
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_xxx}
+    # En dev, on peut ignorer la vérification de signature du webhook (STRIPE_SKIP_VERIFY=true)
+    skip-verify: ${STRIPE_SKIP_VERIFY:true}
+    # Mode fake pour ne pas appeler Stripe en dev (STRIPE_FAKE=true). Mettre STRIPE_FAKE=false en prod.
+    fake: ${STRIPE_FAKE:true}
+  notification:
+    reminderHours: 24
+  jwt:
+    accessSecret: change_me_access_secret
+    refreshSecret: change_me_refresh_secret
+    accessTtlMinutes: 15
+    refreshTtlDays: 14
